@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Title</title>
+	<script src="http://localhost:3000/socket.io/socket.io.js" charset="UTF-8"></script>
+	<script>
+		let sock = io.connect('ws://localhost:3000');
+		//	客户端发送数据
+		sock.emit('add', 12, 5);
+	</script>
+</head>
+<body>
+</body>
+</html>
