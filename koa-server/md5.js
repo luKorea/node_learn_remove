@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 
-let pass = crypto.createHash('md5');
-pass.update('124058hg');
-console.log(pass.digest('hex'));
+let obj = crypto.createHash('md5');
+obj.update('123456');
+
+console.log(obj.digest('hex'));

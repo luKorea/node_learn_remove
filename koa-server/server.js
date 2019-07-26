@@ -1,55 +1,66 @@
-const path = require('path');
-const fs = require('fs');
 const Koa = require('koa');
 const Router = require('koa-router');
-const Session = require('koa-session');
-const KoaBetterBody = require('koa-better-body');
+const static = require('./routers/static');
+const body = require('koa-better-body');
+const path = require('path');
+const session = require('koa-session');
+const fs = require('fs');
 const ejs = require('koa-ejs');
-
-const db = require('./libs/dataBase');
-const Static = require('./routers/static');
 const config = require('./config');
 
+let server = new Koa();
+server.listen(config.PORT);
+console.log(`server running at http://localhost:${config.PORT}/`);
 
-const app = new Koa();
-app.use(async (ctx, next) => {
-  try {
-    await next();
-  } catch (e) {
-    ctx.throw(500, 'Internal Server Error');
-  }
-});
-
-app.keys = fs.readFileSync('./.keys').toString().split('\n');
-app.context.db = db;
-app.context.config = config;
-app.use(KoaBetterBody({
+//中间件
+server.use(body({
   uploadDir: config.UPLOAD_DIR
 }));
-app.use(Session({
+
+server.keys = fs.readFileSync('.keys').toString().split('\n');
+server.use(session({
   maxAge: 20 * 60 * 1000,
   renew: true
-}, app));
+}, server));
 
+//数据库
+server.context.db = require('./libs/database');
+server.context.config = config;
 
-ejs(app, {
+//渲染
+ejs(server, {
   root: path.resolve(__dirname, 'template'),
   layout: false,
   viewExt: 'ejs',
   cache: false,
-  debug: false,
+  debug: false
 });
 
-const router = new Router();
+server.use(async (ctx, next) => {
+  let {HTTP_ROOT} = ctx.config;
 
-app.use(router.routes());
-Static(router);
-router.use('/', require('./routers/www'));
-router.use('/api', require('./routers/api'));
+  try {
+    await next();
+
+    if (!ctx.body) {
+      await ctx.render('www/404', {
+        HTTP_ROOT
+      });
+    }
+  } catch (e) {
+    await ctx.render('www/404', {
+      HTTP_ROOT
+    });
+  }
+});
+
+//路由和static
+let router = new Router();
+
+
 router.use('/admin', require('./routers/admin'));
+router.use('/api', require('./routers/api'));
+router.use('/', require('./routers/www'));
+static(router);
 
-
-app.listen(config.PORT, () => {
-  console.log(`http://localhost:${config.PORT}/`);
-});
-
+server.use(router.routes());

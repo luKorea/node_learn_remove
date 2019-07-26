@@ -1,5 +1,5 @@
 const Router = require('koa-router');
 
-const router = new Router();
+let router = new Router();
 
 module.exports = router.routes();
